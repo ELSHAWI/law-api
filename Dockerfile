@@ -12,17 +12,23 @@ RUN a2enmod rewrite
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy app files
-COPY . .
+# Copy composer files first (for caching)
+COPY composer.json composer.lock ./
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Install PHP dependencies
+# Install PHP dependencies without dev
 RUN composer install --no-dev --optimize-autoloader
 
-# Generate Laravel app key
-RUN php artisan key:generate
+# Copy rest of the application files
+COPY . .
+
+# Copy .env file if exists (or use ENV in Render dashboard)
+# If you're using Render's Environment Variables dashboard, no need to copy .env manually.
+
+# Generate Laravel app key (only if .env exists or APP_KEY already set)
+RUN php artisan config:clear && php artisan key:generate || echo "Skipping key generate"
 
 # Set permissions for storage and cache
 RUN chown -R www-data:www-data storage bootstrap/cache
@@ -32,4 +38,3 @@ EXPOSE 80
 
 # Start Apache in the foreground
 CMD ["apache2-foreground"]
-
