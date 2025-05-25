@@ -3,8 +3,8 @@ FROM php:8.1-apache
 
 # Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
-    libzip-dev zip unzip git curl && \
-    docker-php-ext-install pdo pdo_mysql zip
+    libzip-dev zip unzip git curl libpq-dev && \
+    docker-php-ext-install pdo pdo_pgsql zip
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
@@ -24,10 +24,7 @@ RUN composer install --no-dev --optimize-autoloader
 # Copy rest of the application files
 COPY . .
 
-# Copy .env file if exists (or use ENV in Render dashboard)
-# If you're using Render's Environment Variables dashboard, no need to copy .env manually.
-
-# Generate Laravel app key (only if .env exists or APP_KEY already set)
+# Clear config cache and generate key only if .env exists or APP_KEY set
 RUN php artisan config:clear && php artisan key:generate || echo "Skipping key generate"
 
 # Set permissions for storage and cache
